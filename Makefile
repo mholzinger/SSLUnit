@@ -1,17 +1,19 @@
 ARCHTYPE = $(shell uname -m)
 CC = gcc
 
-SSLFIPSDIR    = /usr/local/ssl/fips
-FIPS_INCLUDE  = $(SSLFIPSDIR)/include
-FIPSMODULE    = $(SSLFIPSDIR)/lib/fipscanister.o
-FIPSLD_CC     = $(CC) -L$(SSLFIPSDIR)/fips/lib -Wl,-R$(SSLFIPSDIR)/fips/lib
-LIBCRYPTO     = 
+FIPS_MAJ=2.0
 
-LDFLAGS       = -lssl -lcrypto
+OPENSSLDIR    = /usr/local/ssl
+FIPS_INCLUDE  = $(OPENSSLDIR)/include
+FIPSMODULE    = $(OPENSSLDIR)/lib/fipscanister.o
+LIBCRYPTO     = $(OPENSSLDIR)/lib/libcrypto.a
+PROG = sslunit
+OBJS = $(PROG).o
 
-CFLAGS = -I$(FIPS_INCLUDE) $(PLATFORM) -march=native -std=c99 -D_POSIX_SOURCE -pedantic -Wall $(DEBUG_FLAGS) \
-		 ${DISPLAYCERTINFO} ${VERBOSE} -D_GNU_SOURCE $(CXXFLAGS) $(LARGEFILES)
+CFLAGS = -I$(FIPS_INCLUDE) $(PLATFORM) -march=native -std=c99 -D_POSIX_SOURCE \
+	-pedantic -Wall $(DEBUG_FLAGS) -D_GNU_SOURCE $(CXXFLAGS) $(LARGEFILES)
 COMPILE.c = $(CC) $(CFLAGS) $(PLATFORM) -c
+RM = rm -rf
 
 ifeq ($(ARCHTYPE),x86_64)
 LARGEFILES =
@@ -22,10 +24,6 @@ endif
 
 OS = $(shell uname -s)
 OUTPUT_OPTION = -o $@
-
-PROG = sslunit
-PROGOBJS = $(PROG).o
-RM = rm -rf
 
 vpath %.c src
 
@@ -52,9 +50,10 @@ clean:
 	$(RM) *.o $(PROG) *._* *~
 	@echo ' '
 
-$(PROG): $(PROGOBJS)
+$(PROG): $(OBJS)
 	@echo 'Building target: $@'
-	env FIPSLD_CC=gcc $(SSLFIPSDIR)/bin/fipsld -L$(SSLFIPSDIR)/lib -Wl,-R$(SSLFIPSDIR)/lib $(PROGOBJS) $(SSLFIPSDIR)/lib/fipscanister.o -lssl -lcrypto -ldl -o $(PROG)
+	env FIPSLD_CC=$(CC) $(OPENSSLDIR)/fips-$(FIPS_MAJ)/bin/fipsld \
+		-o $(PROG) $(OBJS) $(LIBCRYPTO) -lssl -ldl
 	@echo 'Finished building target: $@'
 	@echo ' '
 

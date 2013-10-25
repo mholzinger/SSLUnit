@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 /*----------------------------------------------------------------------------*/
 void print_ssl_error_stack(void)
 {
-	/* This clears the error stack by looping on non-zero ERR_get_error */
+	/* loop to clear the openssl error stack on non-zero ERR_get_error */
     char error_msg[error_buf];
 	unsigned long ul_error = ERR_get_error();
 
